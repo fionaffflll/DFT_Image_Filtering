@@ -10,9 +10,9 @@ clear all;
 clc;
 
 % Initialization & Variables Declaration 
-image = imread('frame-1.pgm');
+image = imread('frame-1-gray.pgm');
 orgimage  = image;
-[rows columns] = size(orgimage);
+[rows, columns] = size(orgimage);
 M = 2*rows+1; 
 N = 2*columns+1; 
 imgmultiply = zeros(M,N);
@@ -26,14 +26,13 @@ P = fix(M/2);
 Q = fix(N/2);
 
 
-
-
 % Zero Padding
-orgimage(rows:M,columns:N) = 0; 
+% orgimage(rows:M,columns:N) = 0; 
+orgimage(rows,columns) = 0;
  
 % Multiply Original Image by (-1)^(x+y)
- for x = 1:M
-    for y = 1:N
+ for x = 1:P
+    for y = 1:Q
         imgmultiply(x,y) = (-1)^(x+y)*orgimage(x,y);
     end
  end
@@ -41,32 +40,35 @@ orgimage = imgmultiply;
  
  % Computing DFT For Rows And Columns
  tic;
- for  y = 1:N   
-        for  u = 1:M
+ for  y = 1:Q   
+        for  u = 1:P
             Preal(u,y) = 0; 
             Pimg(u,y) = 0;  
-            for  x = 1:M
-                    Preal(u,y) = orgimage(x, y)*cos((2 * pi * u * x)/M)+ Preal(u,y);
-                    Pimg(u,y) = (-1)*orgimage(x,y)*sin((2 * pi * u * x)/M)+ Pimg(u,y);                 
+            for  x = 1:P
+                    Preal(u,y) = orgimage(x, y)*cos((2 * pi * u * x)/P)+ Preal(u,y);
+                    Pimg(u,y) = (-1)*orgimage(x,y)*sin((2 * pi * u * x)/P)+ Pimg(u,y);                 
             end 
         end 
  end
-orgimage = Preal + i*Pimg;  
- for  x = 1:M    
-        for  v = 1:N
+orgimage = Preal + 1i*Pimg;  
+
+ for  x = 1:P    
+        for  v = 1:Q
             Preal(x,v) = 0; 
             Pimg(x,v) = 0; 
-            for  y = 1:N
-                    Preal(x,v) = orgimage(x, y)*cos((2 * pi * v * y)/N)+ Preal(x,v);
-                    Pimg(x,v) = (-1)*orgimage(x,y)*sin((2 * pi * v * y)/N)+ Pimg(x,v);                                       
+            for  y = 1:Q
+                    Preal(x,v) = orgimage(x, y)*cos((2 * pi * v * y)/Q)+ Preal(x,v);
+                    Pimg(x,v) = (-1)*orgimage(x,y)*sin((2 * pi * v * y)/Q)+ Pimg(x,v);                                       
             end 
         end 
   end
-orgimage = Preal + i*Pimg;  
+orgimage = Preal + 1i*Pimg;  
+
 fprintf('DFT is Terminated Now!\n');
 fprintf('Elapsed Time for DFT = %d Sec.\n', toc);
-for u = 1:M
-    for v = 1:N
+
+for u = 1:P
+    for v = 1:Q
         D = sqrt((u-P)^2+(v-Q)^2);  
         if D <= D0
             H = 1;
@@ -81,28 +83,36 @@ F = real(F);
 
 % Computing Inverse DFT For Rows And Columns
 tic; 
-for  y = 1:N   
-        for  u = 1:M
+for  y = 1:Q   
+        for  u = 1:P
             orgimage_real(u,y) = 0;           
-            for  x = 1:M
-                    orgimage_real(u,y) = F(x, y)*cos((2 * pi * u * x)/M)+ orgimage_real(u,y);
+            for  x = 1:P
+                    orgimage_real(u,y) = F(x, y)*cos((2 * pi * u * x)/P)+ orgimage_real(u,y);
             end 
         end 
 end
 F = orgimage_real;
-for  x = 1:M    
-      for  v = 1:N
+
+for  x = 1:P    
+      for  v = 1:Q
           orgimage_real(x,v) = 0;         
-          for  y = 1:N
-                  orgimage_real(x,v) = F(x,y)*cos((2 * pi * v * y)/N)+ orgimage_real(x,v);                                    
+          for  y = 1:Q
+                  orgimage_real(x,v) = F(x,y)*cos((2 * pi * v * y)/Q)+ orgimage_real(x,v);                                    
            end 
       end 
         
 end
+
 orgimage_real = orgimage_real/(M*N);
 fprintf('Inverse DFT is Terminated Now!\n');
 fprintf('Elapsed Time for Inverse DFT = %d Sec.\n', toc);  
 filteredimg(1:rows, 1:columns)= orgimage_real(1:rows, 1:columns);  
 figure('Name','2D DFT in Image Filtering','NumberTitle','off');
-subplot(1,2,1), imshow(image), title('Original Image');
-subplot(1,2,2), imshow(filteredimg, []), title ('Filtered Image');
+
+subplot(1,2,1);
+imshow(image);
+title('Original Image');
+
+subplot(1,2,2);
+imshow(filteredimg, []);
+title ('Filtered Image');
